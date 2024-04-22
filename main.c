@@ -10,7 +10,9 @@
 enum Orientation { Normal, LeftUp, BottomUp, RightUp, Undefined};
 
 DBusError error;
-char* output = "eDP-1"; // Default output device
+//TODO: Make output a list
+// char output[] = "eDP-1"; // Default output device
+char *outputs[2] = { "eDP-1", "eDP-2" }; // Default output devices
 
 void dbus_disconnect(DBusConnection* connection) {
     dbus_connection_flush(connection);
@@ -86,18 +88,22 @@ void system_fmt(char* format, ...) {
 void handle_orientation(enum Orientation orientation) {
     if (orientation == Undefined)
         return;
-
+    // TODO: make the following execute on iterator of output list?
     // transform display
-    system_fmt("hyprctl keyword monitor %s,transform,%d", output, orientation);
+    //system_fmt("hyprctl keyword monitor %s,transform,%d", output, orientation);
+	int i;
+    for (i = 0; i < 2; i++) {
+		system_fmt("hyprctl keyword monitor %s,transform,%d", outputs[i], orientation);
 
-    // transform touch devices
-    // (and pray that our lord and savior vaxry won't change hyprctl output)
-    system_fmt("while IFS=$'\n' read -r device ; do "
-            "hyprctl keyword device:\"$device\":transform %d; "
-            "done <<< \"$(hyprctl devices | awk '/Touch Device at|Tablet at/ {getline;print $1}')\"",
-            orientation);
+	    // transform touch devices
+	    // (and pray that our lord and savior vaxry won't change hyprctl output)
+	    system_fmt("while IFS=$'\n' read -r device ; do "
+		    "hyprctl keyword device:\"$device\":transform %d; "
+		    "done <<< \"$(hyprctl devices | awk '/Touch Device at|Tablet at/ {getline;print $1}')\"",
+		    orientation);
+	}
+
 }
-
 DBusMessage* request_orientation(DBusConnection* conn) {
 
     // create request calling Get method
@@ -187,7 +193,11 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     if (argc > 1) {
-        output = argv[1];
+        //output = argv[1];
+		//for (i = 1; i < 3; i++) {
+		//	outputs +=
+		//}
+		outputs[0] = argv[1];
     }
 
     // if hyprland and iio-hyprland are restarted after display is already rotated,
